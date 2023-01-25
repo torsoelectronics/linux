@@ -40,6 +40,7 @@ dtbo-$(CONFIG_ARCH_BCM2835) += \
 	dionaudio-loco-v2.dtbo \
 	disable-bt.dtbo \
 	disable-wifi.dtbo \
+	dlc350-panel.dtbo \
 	dpi18.dtbo \
 	dpi18cpadhi.dtbo \
 	dpi24.dtbo \
