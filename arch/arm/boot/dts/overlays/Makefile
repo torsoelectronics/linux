@@ -53,6 +53,7 @@ dtbo-$(CONFIG_ARCH_BCM2835) += \
 	disable-emmc2.dtbo \
 	disable-wifi.dtbo \
 	disable-wifi-pi5.dtbo \
+	dlc350-panel.dtbo \
 	dpi18.dtbo \
 	dpi18cpadhi.dtbo \
 	dpi24.dtbo \
