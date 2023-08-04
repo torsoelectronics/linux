@@ -1937,7 +1937,7 @@ static const struct of_device_id ili9881c_of_match[] = {
 	{ .compatible = "nwe,nwe080", .data = &nwe080_desc },
 	{ .compatible = "wanchanglong,w552946aba", .data = &w552946aba_desc },
 	{ .compatible = "crystalfontz,cfaf7201280a0_050tx", .data = &cfaf7201280a0_050tx_desc },
-  { .compatible = "dlc350", .data = &dlc350_desc"},
+  { .compatible = "dlc,dlc350", .data = &dlc350_desc },
 	{ }
 };
 MODULE_DEVICE_TABLE(of, ili9881c_of_match);
