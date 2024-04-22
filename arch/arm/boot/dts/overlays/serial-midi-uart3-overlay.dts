@@ -1,0 +1,19 @@
+/dts-v1/;
+/plugin/;
+
+/ {
+	compatible = "brcm,bcm2711";
+
+  fragment@0 {
+    target = <&uart3>;  // Points to UART3
+
+    __overlay__ {
+      status = "okay";  // Enable UART port
+
+      serial_midi: midi {
+        compatible = "serial-midi";
+        status = "okay";  // Enable serial MIDI interface
+      };
+    };
+  };
+};
