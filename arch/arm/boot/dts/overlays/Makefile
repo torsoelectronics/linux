@@ -237,6 +237,7 @@ dtbo-$(CONFIG_ARCH_BCM2835) += \
 	sdio-pi5.dtbo \
 	seeed-can-fd-hat-v1.dtbo \
 	seeed-can-fd-hat-v2.dtbo \
+	serial-midi-uart3.dtbo \
 	sh1106-spi.dtbo \
 	si446x-spi0.dtbo \
 	smi.dtbo \
