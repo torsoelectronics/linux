@@ -135,8 +135,8 @@ static int audiosense_pi_card_startup(struct snd_pcm_substream *substream)
 	snd_pcm_hw_constraint_list(runtime, 0, SNDRV_PCM_HW_PARAM_CHANNELS,
 				   &audiosense_constraints_ch);
 
-	runtime->hw.formats = SNDRV_PCM_FMTBIT_S16_LE;
-	snd_pcm_hw_constraint_msbits(runtime, 0, 16, 16);
+	runtime->hw.formats = SNDRV_PCM_FMTBIT_S24_LE;
+	snd_pcm_hw_constraint_msbits(runtime, 0, 24, 24);
 
 
 	snd_pcm_hw_constraint_list(substream->runtime, 0,
