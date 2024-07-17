@@ -20,7 +20,7 @@
             };
 
             dsi_panel: dsi_panel@0 {
-                compatible = "dlc,dlc350";
+                compatible = "dlc,dlc350v11";
                 reg=<0>;
                 reset-gpios = <&gpio 9 0>;
                 backlight = <&rpi_backlight>;
