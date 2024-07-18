@@ -175,9 +175,87 @@ struct st7703_panel_desc jh057n00900_panel_desc = {
 		static const u8 d[] = { seq };				\
 		int ret;						\
 		ret = mipi_dsi_dcs_write(dsi, cmd, d, ARRAY_SIZE(d));	\
+		msleep(20);						\
 		if (ret < 0)						\
 			return ret;					\
 	} while (0)
+
+// #define dsi_dcs_write_seq(dsi, seq...) w = 3;do {			\
+// 		static const u8 d[] = { seq };				\
+// 		int ret;						\
+// 		ret = mipi_dsi_generic_write(dsi, d, ARRAY_SIZE(d));	\
+// 		msleep(60);						\
+// 		if (ret < 0)						\
+// 		{								\
+// 			printk("kd035: cannot gwrite cmd = %X\n", d[0]);	\
+// 			if(w-- == 0)				\
+// 			{							\
+// 				printk("kd035: cannot gwrite total\n");			\
+// 				return ret;				\
+// 			}							\
+// 			continue;					\
+// 		}								\
+// 		break;							\
+// 	} while (1)
+
+// #define dsi_dcs_write_seq(dsi, seq...) w = 3;do {			\
+// 		static const u8 d[] = { seq };				\
+// 		int ret;						\
+// 		if(w-- == 0)				\
+// 		{							\
+// 			break;							\
+// 		}							\
+// 		ret = mipi_dsi_generic_write(dsi, d, ARRAY_SIZE(d));	\
+// 		if (ret < 0)						\
+// 			printk("ERROR %X %d\n", d[0], ret);	\
+// 		else	\
+// 			printk("SUCCESS %X\n", d[0]);	\
+// 		msleep(60);						\
+// 	} while (1)
+
+static void readInfo(struct mipi_dsi_device *dsi)
+{
+	u8 data[4];
+	int ret;
+	// int i;
+	// unsigned int addr;
+	// u8 cmd = 0;
+	// u8 regs[] = {0xb9, 0xba, 0xb8, 0xbf, 0xb3, 0xc0, 0xbc, 0xcc,
+	// 		0xb4, 0xb2, 0xe3, 0xc1, 0xb5, 0xe9, 0xea, 0xe0};
+
+	data[0] = data[1] = data[2] = data[3] = 0;
+
+	printk("Reading registers!\n");
+
+	ret = mipi_dsi_dcs_read(dsi, 0xDA, data, 1);
+	printk("kd035: ID = %x %x %x. ret = %d\n", data[0], data[1], data[2], ret);
+	// ret = mipi_dsi_dcs_read(dsi, 0xDB, data+1, 1);
+	// printk("kd035: ID = %x %x %x. ret = %d\n", data[0], data[1], data[2], ret);
+	// ret = mipi_dsi_dcs_read(dsi, 0xDC, data+2, 1);
+	// printk("kd035: ID = %x %x %x. ret = %d\n", data[0], data[1], data[2], ret);
+
+	// cmd = 4;
+	// ret = mipi_dsi_generic_read(dsi, &cmd, 1, data, 1);
+	// printk("kd035: ID = %x %x %x. ret = %d\n", data[0], data[1], data[2], ret);
+
+	// cmd = 0xB2;
+	// ret = mipi_dsi_generic_read(dsi, &cmd, 1, data, 1);
+	// printk("kd035: 0xB2 = %x %x %x. ret = %d\n", data[0], data[1], data[2], ret);
+
+	// for(addr = 0x0a; addr <= 0x0f; addr++)
+	// {
+	// 	ret = mipi_dsi_dcs_read(dsi, addr, data, 1);
+	// 	printk("kd035: REG = %x. VAL = %x. ret = %d\n", addr, data[0], ret);
+	// }
+
+	// for(i = 0; i < sizeof(regs); i++)
+	// {
+	// 	ret = mipi_dsi_dcs_read(dsi, regs[i], data, 1);
+	// 	printk("kd035: %x = %x, ret = %d\n", regs[i], data[0], ret);
+	// }
+
+	printk("End registers\n\n");
+}
 
 
 static int xbd599_init_sequence(struct st7703 *ctx)
@@ -345,7 +423,7 @@ static int xbd599_init_sequence(struct st7703 *ctx)
 	// 		  0x35, 0x07, 0x0D, 0x0E, 0x12, 0x13, 0x10, 0x12,
 	// 		  0x12, 0x18);
 
-	// return 0;
+	return 0;
 }
 
 static const struct drm_display_mode xbd599_mode = {
@@ -375,23 +453,25 @@ static int p0500063b_init_sequence(struct st7703 *ctx)
 {
 	struct mipi_dsi_device *dsi = ctx->dsi;
 	u8 b, val;
-	int ret;
-
-	dsi = ctx->dsi;
+	int ret, w;
+	// readInfo(dsi);
 
 	/*
 	 * Init sequence was supplied by the panel vendor.
 	 */
 
+	// msleep(60);
 	dev_err(&ctx->dsi->dev, "INIT 1\n");
 	/* Magic sequence to unlock user commands below. */
 	dsi_dcs_write_seq(dsi, ST7703_CMD_SETEXTC, 0xF1, 0x12, 0x83);
 	dev_err(&ctx->dsi->dev, "INIT 2\n");
 
+	// msleep(60);
 	// Unknown command
 	dsi_dcs_write_seq(dsi, 0xB1, 0x00, 0x00, 0x00, 0xDA, 0x80);
 	dev_err(&ctx->dsi->dev, "INIT 3\n");
 
+	// msleep(60);
 	/* Set display resolution. */
 	dsi_dcs_write_seq(dsi, ST7703_CMD_SETDISP,
 			  0x78, /* NL = 120 */
@@ -403,6 +483,7 @@ static int p0500063b_init_sequence(struct st7703 *ctx)
 				 * ISC = 0 frames
 				 */);
 
+	// msleep(60);
 	/* RGB I/F porch timing */
 	dsi_dcs_write_seq(dsi, ST7703_CMD_SETRGBIF,
 			  0x1A, /* VBP_RGB_GEN */
@@ -415,28 +496,34 @@ static int p0500063b_init_sequence(struct st7703 *ctx)
 			  0x00, 0x00);
 	dev_err(&ctx->dsi->dev, "INIT 4\n");
 
+	// msleep(60);
 	/* Zig-Zag Type C column inversion. */
 	dsi_dcs_write_seq(dsi, ST7703_CMD_SETCYC, 0x80);
 
 	dev_err(&ctx->dsi->dev, "INIT 5\n");
 	/* Reference voltage. */
+	// msleep(60);
 	dsi_dcs_write_seq(dsi, ST7703_CMD_SETBGP,
 			  0x10, /* VREF_SEL = 5.1V */
 			  0x10  /* NVREF_SEL = 5.1V */);
-	msleep(20);  // unneeded?
+	// msleep(20);  // unneeded?
 	dev_err(&ctx->dsi->dev, "INIT 6\n");
 
+	// msleep(60);
 	dsi_dcs_write_seq(dsi, ST7703_CMD_SETVCOM,
 			  0x48, /* VCOMDC_F = -0.95V */
 			  0x48  /* VCOMDC_B = -0.95V */);
 	dev_err(&ctx->dsi->dev, "INIT 7\n");
 
+	// msleep(60);
 	dsi_dcs_write_seq(dsi, ST7703_CMD_SETPOWER_EXT,
 			  0x2E, /* PCCS = 2, ECP_DC_DIV = 1/72 HSYNC */
 			  0x22, /* DT = 15ms XDK_ECP = x2 */
 			  0xF0, /* PFM_DC_DIV = /1 */
 			  0x13  /* ECP_SYNC_EN = 1, VGX_SYNC_EN = 1 */);
+	dev_err(&ctx->dsi->dev, "INIT 7.1\n");
 
+	// msleep(60);
 	dsi_dcs_write_seq(dsi, ST7703_CMD_SETMIPI,
 			  0x33, /* VC_main = 0, Lane_Number = 3 (4 lanes) */
 			  0x81, /* DSI_LDO_SEL = 1.7V, RTERM = 90 Ohm */
@@ -449,14 +536,26 @@ static int p0500063b_init_sequence(struct st7703 *ctx)
 			  0x44, 0x25, 0x00, 0x90, 0x0A, 0x00, 0x00, 0x01,
 			  0x4F, 0x01, 0x00, 0x00, 0x37);
 
+
+	// dsi_dcs_write_seq(dsi, ST7703_CMD_SETMIPI,
+	// 		  0x33, /* VC_main = 0, Lane_Number = 3 (4 lanes) */
+	// 		  0x81, /* DSI_LDO_SEL = 1.7V, RTERM = 90 Ohm */
+	// 		  0x05, /* IHSRX = x6 (Low High Speed drive ability) */
+	// 		  0xF9, /* TX_CLK_SEL = fDSICLK/16 */
+	// 		  0x0E, /* HFP_OSC (min. HFP number in DSI mode) */
+	// 		  0x0E /* HBP_OSC (min. HBP number in DSI mode) */);
+	// msleep(60);
+
 	dev_err(&ctx->dsi->dev, "INIT 8\n");
 	/* NVDDD_SEL = -1.8V, VDDD_SEL = out of range (possibly 2.0V?) */
 	dsi_dcs_write_seq(dsi, ST7703_CMD_SETVDC, 0x4F);
 	dev_err(&ctx->dsi->dev, "INIT 9\n");
 
+	// msleep(60);
 	/* Undocumented command. */
 	dsi_dcs_write_seq(dsi, ST7703_CMD_UNKNOWN_BF, 0x02, 0x11, 0x00);
 
+	// msleep(60);
 	dev_err(&ctx->dsi->dev, "INIT 10\n");
 	/* Source driving settings. */
 	dsi_dcs_write_seq(dsi, ST7703_CMD_SETSCR,
@@ -470,6 +569,7 @@ static int p0500063b_init_sequence(struct st7703 *ctx)
 			  0x70, /* SCR[7,0] */
 			  0x00  /* Undocumented */);
 
+	// msleep(60);
 	dsi_dcs_write_seq(dsi, ST7703_CMD_SETPOWER,
 			  0x64, /* VBTHS, VBTLS: VGH = 16V, VBL = -11V */
 			  0xC1, /* FBOFF_VGH = 1, FBOFF_VGL = 1 */
@@ -488,9 +588,11 @@ static int p0500063b_init_sequence(struct st7703 *ctx)
 			  0x3E  /* VGH3_R_DIV (9.0MHz), VGL3_R_DIV (1.8MHz) */);
 
 	dev_err(&ctx->dsi->dev, "INIT 11\n");
+	// msleep(60);
 	/* Undocumented command. */
 	dsi_dcs_write_seq(dsi, ST7703_CMD_UNKNOWN_C6,
 			  0x82, 0x00, 0xBF, 0xFF, 0x00, 0xFF);
+	// msleep(60);
 
 	// Set IO
 	dsi_dcs_write_seq(dsi, ST7703_CMD_SETIO,
@@ -498,6 +600,7 @@ static int p0500063b_init_sequence(struct st7703 *ctx)
 			  0x00, /* VSync delay time=0, HSync delay time=0 */
 			  /* The rest is undocumented in ST7703 datasheet */
 			  0x0A, 0x00, 0x00, 0x00);
+	// msleep(60);
 
 	dev_err(&ctx->dsi->dev, "INIT 12\n");
 	// Content adaptive brightness control
@@ -506,6 +609,7 @@ static int p0500063b_init_sequence(struct st7703 *ctx)
 			  0x40, /* PWM period=FPWM/? */
 			  /* The rest is undocumented in ST7703 datasheet */
 			  0x1E, 0x02);
+	// msleep(60);
 
 	/*
 	 * SS_PANEL = 1 (reverse scan), GS_PANEL = 0 (normal scan)
@@ -514,6 +618,7 @@ static int p0500063b_init_sequence(struct st7703 *ctx)
 	dsi_dcs_write_seq(dsi, ST7703_CMD_SETPANEL, 0x0B);
 
 	dev_err(&ctx->dsi->dev, "INIT 13\n");
+	// msleep(60);
 	/* Adjust the gamma characteristics of the panel. */
 	dsi_dcs_write_seq(dsi, ST7703_CMD_SETGAMMA,
 			0x00, 0x0B, 0x10, 0x24, 0x29, 0x38,
@@ -522,6 +627,7 @@ static int p0500063b_init_sequence(struct st7703 *ctx)
 			0x38, 0x44, 0x39, 0x0A, 0x0D, 0x0D, 0x12, 0x14,
 			0x13, 0x15, 0x10, 0x15);
 
+	// msleep(60);
 	dsi_dcs_write_seq(dsi, ST7703_CMD_SETEQ,
 			0x07, /* PNOEQ */
 			0x07, /* NNOEQ */
@@ -542,6 +648,7 @@ static int p0500063b_init_sequence(struct st7703 *ctx)
 			       * ESD_DET_TIME_SEL = 0 frames
 			       */);
 
+	// msleep(60);
 	dev_err(&ctx->dsi->dev, "INIT 14\n");
 	/* This command is to set forward GIP timing. */
 	dsi_dcs_write_seq(dsi, ST7703_CMD_SETGIP1,
@@ -554,6 +661,7 @@ static int p0500063b_init_sequence(struct st7703 *ctx)
 			0x31, 0x31, 0x88, 0x88, 0x00, 0x00, 0x00, 0x00,
 			0x00, 0x80, 0x81, 0x5F, 0x00, 0x00, 0x00, 0x00,
 			0x00, 0x00, 0x00);
+	// msleep(60);
 
 	/* This command is to set backward GIP timing. */
 	dsi_dcs_write_seq(dsi, ST7703_CMD_SETGIP2,
@@ -567,12 +675,15 @@ static int p0500063b_init_sequence(struct st7703 *ctx)
 			0x70, 0x80, 0x81, 0x40, 0x80, 0x81, 0x00, 0x00,
 			0x00, 0x00);
 
+	// msleep(60);
 	dev_err(&ctx->dsi->dev, "INIT 15\n");
 	/* Undocumented command. */
 	dsi_dcs_write_seq(dsi, ST7703_CMD_UNKNOWN_EF, 0xFF, 0xFF, 0x01);
+	// msleep(60);
 
-	dev_err(&ctx->dsi->dev, "PX ON\n");
-	dsi_dcs_write_seq(ctx->dsi, 0x23); // all pixels on
+	// dev_err(&ctx->dsi->dev, "PX ON\n");
+	// dsi_dcs_write_seq(ctx->dsi, 0x23); // all pixels on
+	// msleep(60);
 
 	// ret = mipi_dsi_dcs_read(ctx->dsi, 0x0A, &val, 1);
 	// if (ret < 0) {
@@ -584,6 +695,8 @@ static int p0500063b_init_sequence(struct st7703 *ctx)
 
 	// dsi_dcs_write_seq(ctx->dsi, 0x23, 0xFF); // all pixels on
 	dev_err(&ctx->dsi->dev, "INIT 16\n");
+
+	// readInfo(dsi);
 
 	return 0;
 }
@@ -637,7 +750,7 @@ static int st7703_enable(struct drm_panel *panel)
 	struct st7703 *ctx = panel_to_st7703(panel);
 	dev_err(&ctx->dsi->dev, "ENABLE BEGIN\n");
 	struct mipi_dsi_device *dsi = ctx->dsi;
-	int ret;
+	int ret, w;
 
 	dsi = ctx->dsi;
 	dsi->mode_flags |= MIPI_DSI_MODE_LPM;
@@ -660,11 +773,23 @@ static int st7703_enable(struct drm_panel *panel)
 	/* Panel is operational 120 msec after reset */
 	msleep(120);
 
-	ret = mipi_dsi_dcs_set_display_on(dsi);
-	if (ret)
-		return ret;
+	readInfo(dsi);
 
-	msleep(500);
+	// mipi_dsi_dcs_set_display_on(dsi);
+	// msleep(20);
+
+	// mipi_dsi_dcs_set_display_on(dsi);
+	// msleep(20);
+
+	ret = mipi_dsi_dcs_set_display_on(dsi);
+	// if (ret)
+	// 	return ret;
+	readInfo(dsi);
+
+	// msleep(500);
+	// dev_err(&ctx->dsi->dev, "PXL ON\n");
+	// dsi_dcs_write_seq(ctx->dsi, 0x23); // all pixels on
+	// msleep(500);
 	// msleep(120);
 	dev_dbg(&ctx->dsi->dev, "Panel init sequence done\n");
 	dev_err(&ctx->dsi->dev, "ENABLE END\n");

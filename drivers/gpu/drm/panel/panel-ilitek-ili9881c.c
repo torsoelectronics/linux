@@ -1189,6 +1189,59 @@ static int ili9881c_send_cmd_data(struct ili9881c *ctx, u8 cmd, u8 data)
 			return ret;                                     \
 	}
 
+// #define DSI_DCS_WRITE(dsi, cmd, seq...) do {			\
+// 		static const u8 d[] = { seq };				\
+// 		int ret;						\
+// 		ret = mipi_dsi_dcs_write(dsi, cmd, d, ARRAY_SIZE(d));	\
+// 		msleep(20);						\
+// 		if (ret < 0)						\
+// 			return ret;					\
+// 	} while (0)
+
+static void readInfo(struct mipi_dsi_device *dsi)
+{
+	u8 data[4];
+	int ret;
+	int i;
+	unsigned int addr;
+	u8 cmd = 0;
+	u8 regs[] = {0xb9, 0xba, 0xb8, 0xbf, 0xb3, 0xc0, 0xbc, 0xcc,
+			0xb4, 0xb2, 0xe3, 0xc1, 0xb5, 0xe9, 0xea, 0xe0};
+
+	data[0] = data[1] = data[2] = data[3] = 0;
+
+	printk("Reading registers!\n");
+
+	ret = mipi_dsi_dcs_read(dsi, 0xDA, data, 1);
+	printk("kd035: ret = %d\n", ret);
+	ret = mipi_dsi_dcs_read(dsi, 0xDB, data+1, 1);
+	printk("kd035: ret = %d\n", ret);
+	ret = mipi_dsi_dcs_read(dsi, 0xDC, data+2, 1);
+	printk("kd035: 0xDA = %x 0xDB = %x 0xDC = %x. ret = %d\n", data[0], data[1], data[2], ret);
+
+	// cmd = 4;
+	// ret = mipi_dsi_generic_read(dsi, &cmd, 1, data, 1);
+	// printk("kd035: ID = %x %x %x. ret = %d\n", data[0], data[1], data[2], ret);
+
+	cmd = 0xB2;
+	ret = mipi_dsi_generic_read(dsi, &cmd, 1, data, 1);
+	printk("kd035: 0xB2 = %x. ret = %d\n", data[0], ret);
+
+	for(addr = 0x0a; addr <= 0x0f; addr++)
+	{
+		ret = mipi_dsi_dcs_read(dsi, addr, data, 1);
+		printk("kd035: REG = %x. VAL = %x. ret = %d\n", addr, data[0], ret);
+	}
+
+	for(i = 0; i < sizeof(regs); i++)
+	{
+		ret = mipi_dsi_dcs_read(dsi, regs[i], data, 1);
+		printk("kd035: %x = %x, ret = %d\n", regs[i], data[0], ret);
+	}
+
+	printk("End registers\n\n");
+}
+
 static int ili9881c_prepare(struct drm_panel *panel)
 {
 	struct ili9881c *ctx = panel_to_ili9881c(panel);
@@ -1201,13 +1254,18 @@ static int ili9881c_prepare(struct drm_panel *panel)
 	if (ret)
 		return ret;
 	msleep(5);
+	printk("@@@@@ GPIO: %d\n\n", desc_to_gpio(ctx->reset));
 
 	/* And reset it */
+	// for (size_t i = 0; i < 200; i++)
+	// {
 	gpiod_set_value_cansleep(ctx->reset, 1);
 	msleep(20);
 
 	gpiod_set_value_cansleep(ctx->reset, 0);
-	msleep(20);
+	msleep(120);
+	// }
+
 
 	// send init commands to panel
 	// for (i = 0; i < ctx->desc->init_length; i++) {
@@ -1233,6 +1291,7 @@ static int ili9881c_prepare(struct drm_panel *panel)
 	// DSI_DCS_WRITE(ctx->dsi, 0x01, 0xF1, 0x12, 0x83);
 	// DSI_DCS_WRITE(ctx->dsi, 0xF1, 0xF1, 0x12, 0x83);
 	// dev_err(&ctx->dsi->dev, "BEFORE2\n");
+	readInfo(ctx->dsi);
 	DSI_DCS_WRITE(ctx->dsi, 0xB9, 0xF1, 0x12, 0x83);
 	DSI_DCS_WRITE(ctx->dsi, 0xB1, 0x00, 0x00, 0x00, 0xDA, 0x80);
 	DSI_DCS_WRITE(ctx->dsi, 0xB2, 0x78, 0x13, 0xF0);
@@ -1253,8 +1312,8 @@ static int ili9881c_prepare(struct drm_panel *panel)
 	DSI_DCS_WRITE(ctx->dsi, 0xC1, 0x64, 0xC1, 0x2C, 0x2C, 0x77, 0xE4, 0xCF,
 		      0xCF, 0x7E, 0x7E, 0x3E, 0x3E);
 	DSI_DCS_WRITE(ctx->dsi, 0xC6, 0x82, 0x00, 0xBF, 0xFF, 0x00, 0xFF);
-	DSI_DCS_WRITE(ctx->dsi, 0xC7, 0xB8, 0x00, 0x0A, 0x00, 0x00, 0x00);
-	DSI_DCS_WRITE(ctx->dsi, 0xC8, 0x10, 0x40, 0x1E, 0x02);
+	// DSI_DCS_WRITE(ctx->dsi, 0xC7, 0xB8, 0x00, 0x0A, 0x00, 0x00, 0x00);
+	// DSI_DCS_WRITE(ctx->dsi, 0xC8, 0x10, 0x40, 0x1E, 0x02);
 	DSI_DCS_WRITE(ctx->dsi, 0xCC, 0x0B);
 	DSI_DCS_WRITE(ctx->dsi, 0xE0, 0x00, 0x0B, 0x10, 0x24, 0x29, 0x38, 0x44,
 		      0x39, 0x0A, 0x0D, 0x0D, 0x12, 0x14, 0x13, 0x15, 0x10,
@@ -1279,19 +1338,20 @@ static int ili9881c_prepare(struct drm_panel *panel)
 		      0x12, 0x30, 0x70, 0x80, 0x81, 0x40, 0x80, 0x81, 0x00,
 		      0x00, 0x00, 0x00);
 	DSI_DCS_WRITE(ctx->dsi, 0xEF, 0xFF, 0xFF, 0x01);
-	DSI_DCS_WRITE(ctx->dsi, 0x11);
-	msleep(250);
-	DSI_DCS_WRITE(ctx->dsi, 0x29);
-	msleep(50);
+	// DSI_DCS_WRITE(ctx->dsi, 0x11);
+	// msleep(250);
+	// DSI_DCS_WRITE(ctx->dsi, 0x29);
+	// msleep(50);
 	dev_err(&ctx->dsi->dev, "AFTER\n");
 
-	ret = mipi_dsi_dcs_read(ctx->dsi, 0x0C, &val, 1);
-	if (ret < 0) {
-		dev_err(&ctx->dsi->dev, "Read register 0x0C failed: %d\n", ret);
-		// return -ENODEV;
-	} else {
-		dev_info(&ctx->dsi->dev, "Read register 0x0C: 0x%02x\n", val);
-	}
+	// ret = mipi_dsi_dcs_read(ctx->dsi, 0x0C, &val, 1);
+	// if (ret < 0) {
+	// 	dev_err(&ctx->dsi->dev, "Read register 0x0C failed: %d\n", ret);
+	// 	// return -ENODEV;
+	// } else {
+	// 	dev_info(&ctx->dsi->dev, "Read register 0x0C: 0x%02x\n", val);
+	// }
+	// readInfo(ctx->dsi);
 	// DSI_DCS_WRITE(ctx->dsi, 0xFF, 0x98, 0x81, 0x00);
 	// DSI_DCS_WRITE(ctx->dsi, 0x0C, 0x07);
 	// DSI_DCS_WRITE(ctx->dsi, 0x36, 0x08);
@@ -1511,17 +1571,25 @@ static int ili9881c_prepare(struct drm_panel *panel)
 	// DSI_DCS_WRITE(ctx->dsi, 0x36, 0x08);
 	// DSI_DCS_WRITE(ctx->dsi, 0x35, 0x00);
 
-	DSI_DCS_WRITE(ctx->dsi, 0x23, 0xFF); // all pixels on
-
 	dev_info(&ctx->dsi->dev, "Display initiated\n");
 
 	// ret = mipi_dsi_dcs_set_tear_on(ctx->dsi, MIPI_DSI_DCS_TEAR_MODE_VBLANK);
 	// if (ret)
 	// 	return ret;
 
-	// ret = mipi_dsi_dcs_exit_sleep_mode(ctx->dsi);
-	// if (ret)
-	// 	return ret;
+	ret = mipi_dsi_dcs_exit_sleep_mode(ctx->dsi);
+	if (ret)
+		return ret;
+
+	msleep(120);
+	ret = mipi_dsi_dcs_read(ctx->dsi, 0x0C, &val, 1);
+	if (ret < 0) {
+		dev_err(&ctx->dsi->dev, "Read register 0x0C failed: %d\n", ret);
+		// return -ENODEV;
+	} else {
+		dev_info(&ctx->dsi->dev, "Read register 0x0C: 0x%02x\n", val);
+	}
+	readInfo(ctx->dsi);
 
 	return 0;
 }
@@ -1531,8 +1599,14 @@ static int ili9881c_enable(struct drm_panel *panel)
 	struct ili9881c *ctx = panel_to_ili9881c(panel);
 
 	msleep(120);
+	// DSI_DCS_WRITE(ctx->dsi, 0x22); // all pixels off
+	// DSI_DCS_WRITE(ctx->dsi, 0x23); // all pixels on
+	msleep(500);
 
 	mipi_dsi_dcs_set_display_on(ctx->dsi);
+
+	// readInfo(ctx->dsi);
+	msleep(500);
 
 	return 0;
 }
@@ -1650,6 +1724,7 @@ static const struct drm_display_mode dlc350v10_default_mode = {
 	.vtotal = 960 + 16 + 2 + 16,
 	.width_mm = 75,
 	.height_mm = 50,
+	.type = DRM_MODE_TYPE_DRIVER | DRM_MODE_TYPE_PREFERRED,
 	.flags = DRM_MODE_FLAG_NHSYNC | DRM_MODE_FLAG_NVSYNC
 };
 
