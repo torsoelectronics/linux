@@ -22,7 +22,7 @@
             dsi_panel: dsi_panel@0 {
                 compatible = "dlc,dlc350";
                 reg=<0>;
-                reset-gpios = <&gpio 9 0>;
+                reset-gpios = <&gpio 9 1>;
                 backlight = <&rpi_backlight>;
                 rotation = <90>;
                 fps = <60>;
